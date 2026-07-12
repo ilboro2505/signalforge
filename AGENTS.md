@@ -40,3 +40,9 @@ Do not advance to the next stage or task without explicit user direction.
 ## Lightweight changes
 
 Typo, formatting, non-behavioral documentation, and maintenance-only changes do not require the full SDD cycle. Any observable behavior change does.
+
+## Git ownership
+
+- The user exclusively performs `git commit` and `git push`.
+- Codex may inspect Git state and prepare working-tree changes, but must not create commits or push branches.
+- When changes are ready, report the verification results and suggest a commit message for the user.
