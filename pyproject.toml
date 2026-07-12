@@ -20,8 +20,10 @@ dev = [
     "build>=1.2,<2",
     "mypy>=1.17,<2",
     "pip-audit>=2.9,<3",
+    "pip-tools>=7.5,<8",
     "pytest>=8.4,<10",
     "ruff>=0.12,<1",
+    "setuptools>=80,<82",
 ]
 
 [project.scripts]

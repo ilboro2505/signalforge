@@ -42,7 +42,7 @@
   - Verification: CLI tests success/partial/failure/configuration, secret-canary scan captured output/logs и все обязательные проверки.
   - Dependencies: TASK-002, TASK-003, TASK-004.
 
-- [ ] **TASK-006: Проверить feature end-to-end и эксплуатационную документацию**
+- [x] **TASK-006: Проверить feature end-to-end и эксплуатационную документацию**
   - Scope: добавить локальную инструкцию PostgreSQL/migrations/session-path/import command без реальных секретов; зафиксировать hashed dependency locks; выполнить полную traceability verification и проверить clean install/build.
   - Related requirements/criteria: REQ-001–REQ-010; AC-001–AC-009.
   - Verification: все design commands, PostgreSQL integration profile, acceptance traceability matrix и ручная проверка документации без обращения к реальному Telegram.

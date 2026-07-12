@@ -1,6 +1,6 @@
 ---
 feature_id: 001-telegram-history-import
-status: Approved
+status: Implemented
 approved_by: user
 approved_at: 2026-07-12
 ---
