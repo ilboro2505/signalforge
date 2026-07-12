@@ -18,7 +18,7 @@
   - Verification: `python -m pytest`, `python -m ruff check .`, `python -m ruff format --check .`, `python -m mypy src tests`, `python -m build`.
   - Dependencies: approved spec и completed design.
 
-- [ ] **TASK-002: Реализовать application model и import service**
+- [x] **TASK-002: Реализовать application model и import service**
   - Scope: определить typed source/repository ports, `SourceMessage`, persisted message input, run summary/status и синхронный orchestration service; реализовать classification, counters, per-message isolation и fatal-error behavior с fake-based unit tests.
   - Related requirements/criteria: REQ-002, REQ-003, REQ-006–REQ-009; AC-001, AC-003, AC-005, AC-006, AC-008.
   - Verification: unit tests application layer плюс все обязательные проверки.
