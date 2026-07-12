@@ -43,6 +43,6 @@ Typo, formatting, non-behavioral documentation, and maintenance-only changes do 
 
 ## Git ownership
 
-- The user exclusively performs `git commit` and `git push`.
-- Codex may inspect Git state and prepare working-tree changes, but must not create commits or push branches.
-- When changes are ready, report the verification results and suggest a commit message for the user.
+- The user performs `git commit` and `git push` by default.
+- Codex may create a commit or push only when the user explicitly delegates that action in the current request.
+- Without explicit delegation, Codex may inspect Git state and prepare working-tree changes, then report verification results and suggest a commit message.
