@@ -30,7 +30,7 @@
   - Verification: migration upgrade/downgrade tests, uniqueness/idempotency/restart integration tests и все обязательные проверки с `SIGNALFORGE_TEST_DATABASE_URL`.
   - Dependencies: TASK-001, TASK-002.
 
-- [ ] **TASK-004: Реализовать безопасный Telethon history adapter**
+- [x] **TASK-004: Реализовать безопасный Telethon history adapter**
   - Scope: реализовать oldest-first user-session source, peer resolution, message normalization, media-type mapping, service-message detection и безопасное преобразование Telegram errors; не загружать media и не логировать session/credentials; тестировать synthetic objects без сети.
   - Related requirements/criteria: REQ-001–REQ-003, REQ-007, REQ-008, REQ-010; AC-001–AC-003, AC-006, AC-007, AC-009.
   - Verification: adapter mapping/error/redaction tests и все обязательные проверки без Telegram network access.
