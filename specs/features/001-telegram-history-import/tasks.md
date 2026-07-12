@@ -24,7 +24,7 @@
   - Verification: unit tests application layer плюс все обязательные проверки.
   - Dependencies: TASK-001.
 
-- [ ] **TASK-003: Добавить PostgreSQL schema и repositories**
+- [x] **TASK-003: Добавить PostgreSQL schema и repositories**
   - Scope: создать Alembic migration для `telegram_messages`/`telegram_import_runs`, SQLAlchemy Core mappings и repositories с `ON CONFLICT DO NOTHING`, batch transactions и run lifecycle; добавить disposable-PostgreSQL integration tests.
   - Related requirements/criteria: REQ-003–REQ-006, REQ-009; AC-002–AC-005, AC-008.
   - Verification: migration upgrade/downgrade tests, uniqueness/idempotency/restart integration tests и все обязательные проверки с `SIGNALFORGE_TEST_DATABASE_URL`.
