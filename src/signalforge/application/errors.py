@@ -11,6 +11,7 @@ class ImportErrorCode(StrEnum):
     TELEGRAM_RATE_LIMIT = "telegram_rate_limit_error"
     TELEGRAM_CONNECTION = "telegram_connection_error"
     DATABASE = "database_error"
+    INTERNAL = "internal_error"
 
 
 class FatalImportError(Exception):

@@ -150,7 +150,7 @@ Unique constraint: `uq_telegram_messages_source(source_chat_id, source_message_i
 
 ## Error handling and observability
 
-- Внешние исключения преобразуются в allow-listed codes: `configuration_error`, `telegram_auth_error`, `telegram_access_error`, `telegram_rate_limit_error`, `telegram_connection_error`, `database_error`, `message_error`.
+- Внешние исключения преобразуются в allow-listed codes: `configuration_error`, `telegram_auth_error`, `telegram_access_error`, `telegram_rate_limit_error`, `telegram_connection_error`, `database_error`, `message_error`, `internal_error`.
 - Пользовательское сообщение содержит тип проблемы и безопасное действие, но не исходное exception payload, URL БД, API hash или session path.
 - Логи структурированы и содержат run ID, event, безопасный chat reference и counters. Полный объект settings и объекты Telethon не логируются.
 - Individual message errors логируют run ID и source message ID без содержимого сообщения.

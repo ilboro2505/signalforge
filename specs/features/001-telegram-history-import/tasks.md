@@ -36,7 +36,7 @@
   - Verification: adapter mapping/error/redaction tests и все обязательные проверки без Telegram network access.
   - Dependencies: TASK-001, TASK-002; DEC-001, DEC-003.
 
-- [ ] **TASK-005: Собрать CLI и configuration boundary**
+- [x] **TASK-005: Собрать CLI и configuration boundary**
   - Scope: реализовать environment-only settings validation, composition root, `import-history` command, JSON summary, documented exit codes и allow-listed safe diagnostics; интегрировать source/service/repositories.
   - Related requirements/criteria: REQ-001, REQ-008–REQ-010; AC-007–AC-009.
   - Verification: CLI tests success/partial/failure/configuration, secret-canary scan captured output/logs и все обязательные проверки.

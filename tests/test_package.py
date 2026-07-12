@@ -15,4 +15,6 @@ def test_cli_stub_prints_help(capsys: CaptureFixture[str]) -> None:
 
     assert exit_code == 0
     # Avoid coupling the skeleton test to argparse formatting details.
-    assert "SignalForge knowledge pipeline" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "SignalForge knowledge pipeline" in output
+    assert "import-history" in output
