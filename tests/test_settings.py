@@ -2,7 +2,7 @@
 
 import pytest
 
-from signalforge.settings import ConfigurationError, load_settings
+from signalforge.settings import ConfigurationError, load_digest_settings, load_settings
 
 
 def valid_environment() -> dict[str, str]:
@@ -43,5 +43,41 @@ def test_rejects_invalid_settings_without_echoing_values(name: str, value: str) 
 
     with pytest.raises(ConfigurationError) as captured:
         load_settings(environment)
+
+    assert "secret-canary" not in str(captured.value)
+
+
+def test_loads_digest_settings_without_telegram_values_and_redacts_secrets() -> None:
+    settings = load_digest_settings(
+        {
+            "SIGNALFORGE_DATABASE_URL": "postgresql+psycopg://db-secret-canary@localhost/db",
+            "SIGNALFORGE_LLM_API_KEY": "llm-secret-canary",
+            "SIGNALFORGE_LLM_MODEL": "configured-model",
+        }
+    )
+
+    assert settings.timezone == "Europe/Moscow"
+    assert settings.output_dir.name == "digests"
+    assert "secret-canary" not in repr(settings)
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("SIGNALFORGE_TIMEZONE", "Mars/Olympus"),
+        ("SIGNALFORGE_LLM_BASE_URL", "http://insecure.example/v1"),
+        ("SIGNALFORGE_LLM_MODEL", ""),
+    ],
+)
+def test_rejects_invalid_digest_settings(name: str, value: str) -> None:
+    environment = {
+        "SIGNALFORGE_DATABASE_URL": "postgresql://localhost/db",
+        "SIGNALFORGE_LLM_API_KEY": "secret-canary",
+        "SIGNALFORGE_LLM_MODEL": "model",
+        name: value,
+    }
+
+    with pytest.raises(ConfigurationError) as captured:
+        load_digest_settings(environment)
 
     assert "secret-canary" not in str(captured.value)

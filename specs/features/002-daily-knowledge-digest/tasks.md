@@ -6,7 +6,7 @@
 - [x] **TASK-002: Добавить PostgreSQL migration/repository**
   - Scope: links/digests tables, date query, idempotent link inserts, digest upsert and integration tests.
   - Related: REQ-002–REQ-004, REQ-008; AC-001, AC-002, AC-005.
-- [ ] **TASK-003: Добавить Responses-compatible LLM adapter и CLI**
+- [x] **TASK-003: Добавить Responses-compatible LLM adapter и CLI**
   - Scope: safe HTTP adapter, settings, composition, JSON command output, redaction tests.
   - Related: REQ-005, REQ-006, REQ-009, REQ-010; AC-003, AC-006, AC-007.
 - [ ] **TASK-004: Документировать, полностью проверить и зафиксировать locks**

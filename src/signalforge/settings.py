@@ -3,6 +3,8 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 class ConfigurationError(Exception):
@@ -18,6 +20,18 @@ class Settings:
     telegram_session_path: Path = field(repr=False)
     telegram_chat: str | int
     database_url: str = field(repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class DigestSettings:
+    """Validated digest settings with secrets excluded from repr."""
+
+    database_url: str = field(repr=False)
+    llm_api_key: str = field(repr=False)
+    llm_model: str
+    llm_base_url: str
+    timezone: str
+    output_dir: Path
 
 
 def load_settings(environ: Mapping[str, str]) -> Settings:
@@ -42,6 +56,29 @@ def load_settings(environ: Mapping[str, str]) -> Settings:
         telegram_session_path=session_path,
         telegram_chat=chat,
         database_url=_required(environ, "SIGNALFORGE_DATABASE_URL"),
+    )
+
+
+def load_digest_settings(environ: Mapping[str, str]) -> DigestSettings:
+    """Validate digest-only configuration without requiring Telegram credentials."""
+    timezone = environ.get("SIGNALFORGE_TIMEZONE", "Europe/Moscow")
+    try:
+        ZoneInfo(timezone)
+    except ZoneInfoNotFoundError:
+        raise ConfigurationError("SIGNALFORGE_TIMEZONE must be a valid IANA timezone") from None
+
+    base_url = environ.get("SIGNALFORGE_LLM_BASE_URL", "https://api.openai.com/v1")
+    parsed_url = urlsplit(base_url)
+    if parsed_url.scheme != "https" or not parsed_url.netloc:
+        raise ConfigurationError("SIGNALFORGE_LLM_BASE_URL must be an absolute HTTPS URL")
+
+    return DigestSettings(
+        database_url=_required(environ, "SIGNALFORGE_DATABASE_URL"),
+        llm_api_key=_required(environ, "SIGNALFORGE_LLM_API_KEY"),
+        llm_model=_required(environ, "SIGNALFORGE_LLM_MODEL"),
+        llm_base_url=base_url,
+        timezone=timezone,
+        output_dir=Path(environ.get("SIGNALFORGE_DIGEST_OUTPUT_DIR", "digests")).expanduser(),
     )
 
 

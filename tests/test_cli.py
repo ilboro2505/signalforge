@@ -1,6 +1,8 @@
-"""Tests for safe import-history CLI behavior."""
+"""Tests for safe SignalForge CLI behavior."""
 
 import json
+from datetime import UTC, date, datetime
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -9,7 +11,9 @@ from _pytest.capture import CaptureFixture
 from signalforge.application.errors import FatalImportError, ImportErrorCode
 from signalforge.application.models import ImportCounts, ImportStatus, ImportSummary
 from signalforge.cli import main
-from signalforge.settings import Settings
+from signalforge.digest.generator import DigestGenerationError
+from signalforge.digest.models import DigestContent, DigestResult
+from signalforge.settings import DigestSettings, Settings
 
 
 def valid_environment() -> dict[str, str]:
@@ -103,4 +107,92 @@ def test_unexpected_failure_is_redacted(capsys: CaptureFixture[str]) -> None:
     output = capsys.readouterr().out
     assert exit_code == 1
     assert json.loads(output)["error_code"] == "internal_error"
+    assert "secret-canary" not in output
+
+
+def digest_environment() -> dict[str, str]:
+    return {
+        "SIGNALFORGE_DATABASE_URL": "postgresql://db-secret-canary@localhost/db",
+        "SIGNALFORGE_LLM_API_KEY": "llm-secret-canary",
+        "SIGNALFORGE_LLM_MODEL": "model",
+        "SIGNALFORGE_DIGEST_OUTPUT_DIR": "/tmp/digests",
+    }
+
+
+def test_generate_digest_defaults_to_previous_local_day_and_emits_json(
+    capsys: CaptureFixture[str],
+) -> None:
+    def digest_runner(settings: DigestSettings, digest_date: date) -> DigestResult:
+        assert settings.timezone == "Europe/Moscow"
+        assert digest_date == date(2026, 7, 12)
+        return DigestResult(
+            DigestContent(digest_date, settings.timezone, 3, 2, "safe", settings.llm_model),
+            Path("/tmp/digests/2026-07-12.md"),
+        )
+
+    exit_code = main(
+        ["generate-digest"],
+        environ=digest_environment(),
+        digest_runner=digest_runner,
+        now=lambda: datetime(2026, 7, 13, 1, tzinfo=UTC),
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload == {
+        "date": "2026-07-12",
+        "link_count": 2,
+        "message_count": 3,
+        "path": "/tmp/digests/2026-07-12.md",
+        "status": "success",
+    }
+
+
+def test_generate_digest_accepts_explicit_date(capsys: CaptureFixture[str]) -> None:
+    seen: list[date] = []
+
+    def digest_runner(settings: DigestSettings, digest_date: date) -> DigestResult:
+        seen.append(digest_date)
+        return DigestResult(
+            DigestContent(digest_date, settings.timezone, 0, 0, "safe", "none"),
+            Path("safe.md"),
+        )
+
+    assert (
+        main(
+            ["generate-digest", "--date", "2026-07-10"],
+            environ=digest_environment(),
+            digest_runner=digest_runner,
+        )
+        == 0
+    )
+    assert seen == [date(2026, 7, 10)]
+    capsys.readouterr()
+
+
+@pytest.mark.parametrize(
+    ("date_argument", "expected_code"),
+    [("not-a-date", "invalid_date"), (None, "llm_error")],
+)
+def test_generate_digest_failures_are_safe(
+    date_argument: str | None,
+    expected_code: str,
+    capsys: CaptureFixture[str],
+) -> None:
+    def failing_runner(_settings: DigestSettings, _digest_date: date) -> DigestResult:
+        raise DigestGenerationError
+
+    argv = ["generate-digest"]
+    if date_argument is not None:
+        argv.extend(["--date", date_argument])
+    exit_code = main(
+        argv,
+        environ=digest_environment(),
+        digest_runner=failing_runner,
+        now=lambda: datetime(2026, 7, 13, tzinfo=UTC),
+    )
+
+    output = capsys.readouterr().out
+    assert exit_code == 1
+    assert json.loads(output)["error_code"] == expected_code
     assert "secret-canary" not in output

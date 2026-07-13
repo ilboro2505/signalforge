@@ -42,7 +42,7 @@ class DailyDigestService:
 
         if messages:
             markdown = self._generator.generate(digest_date, messages, links).strip() + "\n"
-            _validate_markdown(digest_date, markdown)
+            _validate_markdown(digest_date, markdown, links)
             model = self._generator.model
         else:
             markdown = _empty_digest(digest_date)
@@ -89,11 +89,14 @@ def _message_links(messages: Sequence[DigestMessage]) -> tuple[MessageLink, ...]
     )
 
 
-def _validate_markdown(digest_date: date, markdown: str) -> None:
+def _validate_markdown(digest_date: date, markdown: str, links: Sequence[MessageLink]) -> None:
     if not markdown.startswith(f"# SignalForge — {digest_date.isoformat()}"):
         raise InvalidDigestError("digest title is missing")
     if any(heading not in markdown for heading in REQUIRED_HEADINGS):
         raise InvalidDigestError("required digest section is missing")
+    source_ids = {link.source_message_id for link in links}
+    if any(str(source_id) not in markdown for source_id in source_ids):
+        raise InvalidDigestError("link source message ID is missing")
 
 
 def _empty_digest(digest_date: date) -> str:

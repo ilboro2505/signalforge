@@ -5,8 +5,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import pytest
+
 from signalforge.digest.models import DigestContent, DigestMessage, MessageLink
-from signalforge.digest.service import DailyDigestService
+from signalforge.digest.service import DailyDigestService, InvalidDigestError
 from signalforge.digest.timebox import previous_local_day, utc_day_bounds
 from signalforge.digest.urls import extract_urls
 from signalforge.digest.writer import AtomicMarkdownWriter
@@ -112,3 +114,35 @@ def test_empty_day_skips_generator_and_writes_deterministic_digest(tmp_path: Pat
     assert result.content.message_count == 0
     assert "За этот день сообщений нет" in result.content.markdown  # noqa: RUF001
     assert result.output_path.exists()
+
+
+def test_rejects_generated_digest_without_link_source_id(tmp_path: Path) -> None:
+    repository = FakeRepository(
+        [
+            DigestMessage(
+                id=10,
+                source_message_id=77,
+                sent_at=datetime(2026, 7, 12, 10, tzinfo=UTC),
+                text="Useful https://example.com/tool",
+            )
+        ]
+    )
+
+    class MissingSourceGenerator(FakeGenerator):
+        def generate(
+            self,
+            digest_date: date,
+            messages: Sequence[DigestMessage],
+            links: Sequence[MessageLink],
+        ) -> str:
+            return (
+                f"# SignalForge — {digest_date}\n\n## Кратко\n\nSafe.\n\n"
+                "## Основные темы\n\n- Topic\n\n## Полезные ссылки\n\n- URL"
+            )
+
+    with pytest.raises(InvalidDigestError):
+        DailyDigestService(
+            repository, MissingSourceGenerator(), AtomicMarkdownWriter(tmp_path)
+        ).run(date(2026, 7, 12), "Europe/Moscow")
+
+    assert not (tmp_path / "2026-07-12.md").exists()
