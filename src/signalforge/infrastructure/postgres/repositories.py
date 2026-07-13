@@ -1,5 +1,6 @@
 """PostgreSQL repository implementations."""
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -15,7 +16,13 @@ from signalforge.application.models import (
     PersistedMessage,
     StoreOutcome,
 )
-from signalforge.infrastructure.postgres.schema import telegram_import_runs, telegram_messages
+from signalforge.digest.models import DigestContent, DigestMessage, MessageLink
+from signalforge.infrastructure.postgres.schema import (
+    daily_digests,
+    message_links,
+    telegram_import_runs,
+    telegram_messages,
+)
 
 
 def _count_values(counts: ImportCounts) -> dict[str, int]:
@@ -107,3 +114,62 @@ class SqlAlchemyImportRunRepository:
                 connection.execute(statement)
         except SQLAlchemyError:
             raise FatalImportError(ImportErrorCode.DATABASE) from None
+
+
+class SqlAlchemyDigestRepository:
+    """Read daily messages and idempotently persist links and digests."""
+
+    def __init__(self, engine: Engine) -> None:
+        self._engine = engine
+
+    def messages_between(self, start: datetime, end: datetime) -> Sequence[DigestMessage]:
+        statement = (
+            sa.select(
+                telegram_messages.c.id,
+                telegram_messages.c.source_message_id,
+                telegram_messages.c.sent_at,
+                telegram_messages.c.text,
+            )
+            .where(telegram_messages.c.sent_at >= start, telegram_messages.c.sent_at < end)
+            .order_by(telegram_messages.c.sent_at, telegram_messages.c.id)
+        )
+        with self._engine.connect() as connection:
+            rows = connection.execute(statement).mappings().all()
+        return tuple(
+            DigestMessage(
+                id=row["id"],
+                source_message_id=row["source_message_id"],
+                sent_at=row["sent_at"],
+                text=row["text"],
+            )
+            for row in rows
+        )
+
+    def store_links(self, links: Sequence[MessageLink]) -> None:
+        if not links:
+            return
+        values = [{"message_id": link.message_id, "url": link.url} for link in links]
+        statement = (
+            insert(message_links)
+            .values(values)
+            .on_conflict_do_nothing(constraint="uq_message_links_message_url")
+        )
+        with self._engine.begin() as connection:
+            connection.execute(statement)
+
+    def save_digest(self, content: DigestContent) -> None:
+        values: dict[str, object] = {
+            "digest_date": content.digest_date,
+            "timezone": content.timezone,
+            "message_count": content.message_count,
+            "link_count": content.link_count,
+            "markdown": content.markdown,
+            "model": content.model,
+        }
+        statement = insert(daily_digests).values(id=uuid4(), **values)
+        statement = statement.on_conflict_do_update(
+            index_elements=[daily_digests.c.digest_date],
+            set_={**values, "updated_at": sa.func.now()},
+        )
+        with self._engine.begin() as connection:
+            connection.execute(statement)

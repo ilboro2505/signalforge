@@ -1,6 +1,6 @@
-"""PostgreSQL integration tests for history import repositories."""
+"""PostgreSQL integration tests for SignalForge repositories."""
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
 import pytest
@@ -14,11 +14,18 @@ from signalforge.application.models import (
     PersistedMessage,
     StoreOutcome,
 )
+from signalforge.digest.models import DigestContent, MessageLink
 from signalforge.infrastructure.postgres.repositories import (
+    SqlAlchemyDigestRepository,
     SqlAlchemyImportRunRepository,
     SqlAlchemyMessageRepository,
 )
-from signalforge.infrastructure.postgres.schema import telegram_import_runs, telegram_messages
+from signalforge.infrastructure.postgres.schema import (
+    daily_digests,
+    message_links,
+    telegram_import_runs,
+    telegram_messages,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -95,3 +102,38 @@ def test_database_constraints_reject_invalid_run(postgres_engine: Engine) -> Non
                 started_at=datetime.now(UTC),
             )
         )
+
+
+def test_digest_repository_filters_links_and_upserts(postgres_engine: Engine) -> None:
+    message_repository = SqlAlchemyMessageRepository(postgres_engine)
+    assert message_repository.store(persisted_message(7)) is StoreOutcome.NEW
+    assert message_repository.store(persisted_message(8)) is StoreOutcome.NEW
+    repository = SqlAlchemyDigestRepository(postgres_engine)
+
+    messages = repository.messages_between(
+        datetime(2026, 7, 12, tzinfo=UTC), datetime(2026, 7, 13, tzinfo=UTC)
+    )
+    link = MessageLink(messages[0].id, messages[0].source_message_id, "https://example.com")
+    repository.store_links([link])
+    repository.store_links([link])
+    repository.save_digest(_digest_content("first"))
+    repository.save_digest(_digest_content("second"))
+
+    with postgres_engine.connect() as connection:
+        stored_links = connection.execute(sa.select(message_links)).mappings().all()
+        digests = connection.execute(sa.select(daily_digests)).mappings().all()
+    assert [message.source_message_id for message in messages] == [7, 8]
+    assert len(stored_links) == 1
+    assert len(digests) == 1
+    assert digests[0]["markdown"] == "second"
+
+
+def _digest_content(markdown: str) -> DigestContent:
+    return DigestContent(
+        digest_date=date(2026, 7, 12),
+        timezone="Europe/Moscow",
+        message_count=2,
+        link_count=1,
+        markdown=markdown,
+        model="fake",
+    )

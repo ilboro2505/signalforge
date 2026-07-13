@@ -1,4 +1,4 @@
-"""SQLAlchemy Core schema for Telegram history import."""
+"""SQLAlchemy Core schema for SignalForge persistence."""
 
 import sqlalchemy as sa
 
@@ -45,5 +45,44 @@ telegram_import_runs = sa.Table(
         "processed_count >= 0 AND new_count >= 0 AND existing_count >= 0 "
         "AND skipped_count >= 0 AND error_count >= 0",
         name="ck_telegram_import_runs_non_negative_counts",
+    ),
+)
+
+message_links = sa.Table(
+    "message_links",
+    metadata,
+    sa.Column("id", sa.BigInteger, sa.Identity(), primary_key=True),
+    sa.Column(
+        "message_id",
+        sa.BigInteger,
+        sa.ForeignKey("telegram_messages.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
+    sa.Column("url", sa.Text, nullable=False),
+    sa.Column(
+        "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+    ),
+    sa.UniqueConstraint("message_id", "url", name="uq_message_links_message_url"),
+)
+
+daily_digests = sa.Table(
+    "daily_digests",
+    metadata,
+    sa.Column("id", sa.Uuid, primary_key=True),
+    sa.Column("digest_date", sa.Date, nullable=False, unique=True),
+    sa.Column("timezone", sa.Text, nullable=False),
+    sa.Column("message_count", sa.Integer, nullable=False),
+    sa.Column("link_count", sa.Integer, nullable=False),
+    sa.Column("markdown", sa.Text, nullable=False),
+    sa.Column("model", sa.Text, nullable=False),
+    sa.Column(
+        "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+    ),
+    sa.Column(
+        "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+    ),
+    sa.CheckConstraint(
+        "message_count >= 0 AND link_count >= 0",
+        name="ck_daily_digests_non_negative_counts",
     ),
 )
