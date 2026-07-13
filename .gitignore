@@ -19,6 +19,7 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+digests/
 
 # IDE and operating system files
 .DS_Store

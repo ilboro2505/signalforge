@@ -9,6 +9,6 @@
 - [x] **TASK-003: Добавить Responses-compatible LLM adapter и CLI**
   - Scope: safe HTTP adapter, settings, composition, JSON command output, redaction tests.
   - Related: REQ-005, REQ-006, REQ-009, REQ-010; AC-003, AC-006, AC-007.
-- [ ] **TASK-004: Документировать, полностью проверить и зафиксировать locks**
+- [x] **TASK-004: Документировать, полностью проверить и зафиксировать locks**
   - Scope: operations/scheduling docs, traceability, locks, clean install, full PostgreSQL profile.
   - Related: REQ-001–REQ-010; AC-001–AC-007.

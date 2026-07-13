@@ -1,6 +1,6 @@
 ---
 feature_id: 002-daily-knowledge-digest
-status: Approved
+status: Verified
 approved_by: user
 approved_at: 2026-07-12
 ---
